@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SDPA Charge Desk: banker dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F6;--surface:#FFFFFF;--sunk:#F6F8FB;--ink:#16213A;--muted:#5B6478;--line:#DCE1EA;
+  --bank:#2F6FDB;--borrower:#B7791F;--sdpa:#0F766E;--mca:#7C3AED;--breach:#C81E3A;--ok:#157F3B;
+  --z2:rgba(183,121,31,.11);--z3:rgba(200,30,58,.08);--z4:rgba(200,30,58,.17);
+  --shadow:0 1px 0 rgba(22,33,58,.06);
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D1424;--surface:#151E32;--sunk:#111A2C;--ink:#E6EBF4;--muted:#9AA5BC;--line:#27324B;
+  --bank:#6C9DF2;--borrower:#E2A94A;--sdpa:#2FB5A5;--mca:#A78BFA;--breach:#F25C74;--ok:#46C47A;
+  --z2:rgba(226,169,74,.10);--z3:rgba(242,92,116,.08);--z4:rgba(242,92,116,.17);--shadow:none;}}
+:root[data-theme="dark"]{
+  --bg:#0D1424;--surface:#151E32;--sunk:#111A2C;--ink:#E6EBF4;--muted:#9AA5BC;--line:#27324B;
+  --bank:#6C9DF2;--borrower:#E2A94A;--sdpa:#2FB5A5;--mca:#A78BFA;--breach:#F25C74;--ok:#46C47A;
+  --z2:rgba(226,169,74,.10);--z3:rgba(242,92,116,.08);--z4:rgba(242,92,116,.17);--shadow:none;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--bank);outline-offset:2px;border-radius:4px}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.rail{background:var(--ink);color:var(--bg);padding:22px 16px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh}
+:root[data-theme="dark"] .rail{background:#0A101D;color:var(--ink)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .rail{background:#0A101D;color:var(--ink)}}
+.brand{font-weight:800;font-size:18px;letter-spacing:-.01em;line-height:1.15}
+.brand small{display:block;font-weight:500;font-size:12px;opacity:.7;margin-top:4px}
+.rail nav{display:flex;flex-direction:column;gap:2px}
+.rail nav a{color:inherit;text-decoration:none;padding:8px 10px;border-radius:6px;opacity:.78;display:flex;justify-content:space-between;align-items:center}
+.rail nav a:hover,.rail nav a.on{opacity:1;background:rgba(255,255,255,.09)}
+.badge{background:var(--breach);color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px}
+.who{margin-top:auto;font-size:13px;opacity:.8}
+main{padding:24px 28px 60px;min-width:0;display:flex;flex-direction:column;gap:18px;max-width:1440px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+h1{font-size:28px;line-height:1.1;margin:0;letter-spacing:-.02em;font-weight:800}
+.sub{margin:6px 0 0;color:var(--muted);font-size:14px}
+.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:1px;animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.live{animation:none}}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:8px;font-weight:600;font-size:14px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.small{padding:5px 10px;font-size:13px}
+.icon{width:38px;padding:9px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);min-width:0}
+h2{font-size:17px;margin:0;font-weight:700;letter-spacing:-.01em}
+.card>p.lede{margin:4px 0 14px;color:var(--muted);font-size:13.5px;max-width:72ch}
+.ask{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 14px}
+.ask input{flex:1;border:0;background:transparent;padding:8px 0;font-size:15px;min-width:0}
+.ask input:focus{outline:none}
+.ask:focus-within{border-color:var(--bank)}
+.examples{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:-8px}
+.examples button{border:0;background:none;color:var(--bank);padding:2px 0;text-decoration:underline;text-underline-offset:3px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:0}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--sunk);border:1px solid var(--line);border-radius:20px;padding:4px 6px 4px 12px;font-size:13px}
+.chip button{border:0;background:var(--line);width:20px;height:20px;border-radius:50%;line-height:1;padding:0}
+.interp{font-size:13px;color:var(--muted)}
+/* horizon */
+.horizon-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.legend i.hollow{background:none!important;border:2px solid var(--mca)}
+.hz-wrap{overflow-x:auto}
+#horizon{width:100%;min-width:720px;height:auto;display:block}
+#horizon .bead{cursor:pointer;transition:r .12s}
+#horizon .bead:hover,#horizon .bead:focus{r:8;outline:none}
+#horizon .dim{opacity:.13}
+.zone-label{font-size:11.5px;fill:var(--muted);font-weight:600}
+.tick{font-size:11px;fill:var(--muted)}
+.lane-label{font-size:12.5px;font-weight:700}
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.kpi{padding:14px 16px;border-right:1px solid var(--line);text-align:left;background:none;border-top:0;border-bottom:0;border-left:0}
+.kpi:last-child{border-right:0}
+.kpi b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.kpi.warn b{color:var(--borrower)}.kpi.bad b{color:var(--breach)}
+button.kpi:hover{background:var(--sunk)}
+/* lanes */
+.lanes{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.lane{text-align:left;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.lane:hover{border-color:var(--c)}
+.lane.on{background:color-mix(in srgb,var(--c) 9%,var(--surface));border-color:var(--c)}
+.lane .n{font-size:30px;font-weight:800;line-height:1;color:var(--c)}
+.lane .t{font-weight:700;font-size:14.5px}
+.lane .d{font-size:12.5px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:18px}
+/* pipeline */
+.stage{display:grid;grid-template-columns:24px minmax(150px,1.1fr) 2fr 44px;gap:10px;align-items:center;padding:6px 6px;border-radius:6px;border:0;background:none;width:100%;text-align:left}
+.stage:hover,.stage.on{background:var(--sunk)}
+.stage .no{font-size:12px;color:var(--muted);font-weight:700}
+.stage .nm{font-size:13.5px;font-weight:600}
+.stage .nm small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.bar{height:12px;background:var(--sunk);border-radius:3px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.stage .ct{font-weight:700;text-align:right}
+/* srn */
+.srn-bars{display:flex;align-items:flex-end;gap:14px;height:150px;padding:8px 0 0;border-bottom:1px solid var(--line)}
+.srn-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;height:100%;gap:2px;background:none;border:0;padding:0}
+.srn-col i{display:block;border-radius:3px 3px 0 0}
+.srn-col .v{text-align:center;font-weight:700;font-size:13px;margin-bottom:4px}
+.srn-x{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
+.srn-x span{flex:1;text-align:center}
+.srn-note{font-size:13px;color:var(--muted);margin-top:12px}
+/* heatmap */
+.heat{width:100%;border-collapse:separate;border-spacing:3px;font-size:13px}
+.heat th{font-weight:600;color:var(--muted);font-size:12px;text-align:left;padding:2px 4px}
+.heat td.cell{text-align:center;border-radius:5px;padding:7px 0;font-weight:700;cursor:pointer;min-width:44px}
+.heat td.cell.zero{color:var(--muted);font-weight:400;cursor:default}
+.heat td.cell:not(.zero):hover{outline:2px solid var(--ink)}
+.heat td.br{white-space:nowrap;padding-right:8px}
+/* needs you */
+.need{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line)}
+.need:first-of-type{border-top:0}
+.need .who2{font-weight:600;font-size:14px}
+.need .what{font-size:13px;color:var(--muted)}
+.days{font-size:12px;font-weight:700;padding:3px 8px;border-radius:5px;align-self:start;white-space:nowrap}
+.days.ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.days.warn{background:color-mix(in srgb,var(--borrower) 16%,transparent);color:var(--borrower)}
+.days.bad{background:color-mix(in srgb,var(--breach) 14%,transparent);color:var(--breach)}
+/* table */
+.tbl-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.tbl-wrap{overflow-x:auto}
+table.reg{width:100%;border-collapse:collapse;font-size:13.5px;min-width:900px}
+table.reg th{text-align:left;font-weight:600;color:var(--muted);font-size:12.5px;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.reg th button{border:0;background:none;padding:0;color:inherit;font-weight:600}
+table.reg td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.reg tbody tr{cursor:pointer}
+table.reg tbody tr:hover{background:var(--sunk)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:10px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
+.age{display:flex;align-items:center;gap:8px}
+.age .track{width:70px;height:6px;background:var(--sunk);border-radius:3px;position:relative;overflow:hidden}
+.age .track i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.muted{color:var(--muted)}
+.more{margin-top:12px}
+.certs{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.cert{border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;background:var(--sunk)}
+.cert b{font-size:14px}.cert span{font-size:12.5px;color:var(--muted)}
+.cert .btn{margin-top:8px;align-self:flex-start}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,16,29,.42);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--surface);z-index:21;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);border-left:1px solid var(--line)}
+.drawer.on{transform:none}
+@media (prefers-reduced-motion:reduce){.drawer,.scrim{transition:none}}
+.dr-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px}
+.dr-head h3{margin:0;font-size:19px;letter-spacing:-.01em}
+.dr-body{padding:18px 22px 40px;overflow-y:auto;display:flex;flex-direction:column;gap:20px}
+.dr-body h4{margin:0 0 8px;font-size:14px}
+.clock{border-radius:10px;padding:14px 16px;background:var(--sunk);border:1px solid var(--line)}
+.clock .big{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.clock .ctrack{height:10px;border-radius:5px;margin-top:10px;position:relative;background:linear-gradient(90deg,color-mix(in srgb,var(--ok) 30%,transparent) 0 25%,var(--z2) 25% 50%,var(--z3) 50% 100%)}
+.clock .ctrack b{position:absolute;top:-4px;width:4px;height:18px;background:var(--ink);border-radius:2px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13.5px}
+.facts div span{display:block;color:var(--muted);font-size:12px}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:grid;grid-template-columns:18px 1fr auto;gap:10px;padding:0 0 12px;position:relative;font-size:13.5px}
+.tl li::before{content:"";position:absolute;left:5px;top:14px;bottom:-2px;width:2px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl .dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--muted);margin-top:4px;background:var(--surface);position:relative;z-index:1}
+.tl li.done .dot{background:var(--ok);border-color:var(--ok)}
+.tl li.now .dot{border-color:var(--c);background:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent)}
+.tl li.todo{color:var(--muted)}
+.tl time{font-size:12px;color:var(--muted)}
+.checks{list-style:none;margin:0;padding:0;font-size:13.5px}
+.checks li{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);gap:10px}
+.st-ok{color:var(--ok);font-weight:600}.st-pend{color:var(--breach);font-weight:600}.st-na{color:var(--muted)}
+.q{border:1px solid var(--line);border-left:4px solid var(--bank);border-radius:8px;padding:12px 14px;font-size:13.5px;display:flex;flex-direction:column;gap:8px}
+.q small{color:var(--muted)}
+.q textarea{width:100%;border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--sunk);resize:vertical;min-height:54px}
+.q.answered{border-left-color:var(--ok);opacity:.75}
+/* modal */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:30;padding:16px}
+.modal.on{display:flex}
+.modal .box{background:var(--surface);border-radius:14px;width:min(720px,100%);max-height:90vh;overflow-y:auto;border:1px solid var(--line);position:relative;z-index:1}
+.modal .bg{position:absolute;inset:0;background:rgba(10,16,29,.5)}
+.tabs{display:flex;gap:4px;padding:14px 20px 0;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;padding:8px 12px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button.on{color:var(--ink);border-color:var(--ink)}
+.mbody{padding:20px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form label{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.form input,.form select{border:1px solid var(--line);border-radius:7px;padding:9px 10px;background:var(--sunk)}
+.form .full{grid-column:1/-1}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:22px;text-align:center;color:var(--muted);font-size:13.5px}
+.drop.hot{border-color:var(--bank);background:color-mix(in srgb,var(--bank) 6%,transparent)}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;padding:0 20px 20px}
+.progress{height:6px;background:var(--sunk);border-radius:3px;overflow:hidden;margin:10px 0}
+.progress i{display:block;height:100%;width:0;background:var(--sdpa);transition:width .25s}
+table.mini{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+table.mini td,table.mini th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,40px);background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:9px;font-size:14px;opacity:0;transition:.25s;z-index:40;max-width:92vw}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;padding:8px 10px;border-radius:7px;z-index:15;opacity:0;max-width:260px;line-height:1.35}
+.tip.on{opacity:1}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.kpi:nth-child(3){border-right:0}.kpi:nth-child(-n+3){border-bottom:1px solid var(--line)}.grid2{grid-template-columns:1fr}}
+@media (max-width:820px){.app{grid-template-columns:1fr}.rail{position:static;height:auto;flex-direction:row;align-items:center;flex-wrap:wrap;padding:14px 16px}.rail nav{flex-direction:row;flex-wrap:wrap}.who{display:none}main{padding:18px 14px 50px}.lanes{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr 1fr}.kpi{border-bottom:1px solid var(--line)}.kpi:nth-child(odd){border-right:1px solid var(--line)}.kpi:nth-child(even){border-right:0}.form{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">SDPA Charge Desk<small>Charge registration for banks</small></div>
+    <nav>
+      <a href="#overview" class="on">Overview</a>
+      <a href="#needs">Waiting on you <span class="badge" id="navBadge">0</span></a>
+      <a href="#cases">All cases</a>
+      <a href="#certs">Certificates</a>
+    </nav>
+    <div class="who">Rina Banerjee<br>Credit operations, Eastern circle</div>
+  </aside>
+
+  <main id="overview">
+    <header class="top">
+      <div>
+        <h1>Charge registrations</h1>
+        <p class="sub"><span class="live" aria-hidden="true"></span>Demo Bank, Eastern circle. Updated live, 25 Sep 2026</p>
+      </div>
+      <div class="actions">
+        <button class="btn icon" id="themeBtn" aria-label="Switch light or dark theme">◐</button>
+        <button class="btn" id="bulkBtn">Bulk upload</button>
+        <button class="btn primary" id="raiseBtn">Raise request</button>
+      </div>
+    </header>
+
+    <form class="ask" id="askForm" role="search">
+      <input id="askInput" placeholder="Ask about your cases, e.g. which borrower DSCs are pending over 20 days?" aria-label="Ask about your cases">
+      <button class="btn primary small" type="submit">Show cases</button>
+    </form>
+    <div class="examples">Try:
+      <button data-ask="cases waiting on borrower DSC over 20 days">borrower DSC over 20 days</button>
+      <button data-ask="queries pending with us">queries pending with us</button>
+      <button data-ask="SRN pending with MCA over 7 days">SRN with MCA over 7 days</button>
+      <button data-ask="late cases in Durgapur">late cases in Durgapur</button>
+    </div>
+    <div class="chips" id="chips"></div>
+
+    <section class="card">
+      <div class="horizon-head">
+        <div>
+          <h2>Filing horizon</h2>
+          <p class="lede" style="margin:4px 0 0">Every open case, placed by days since the charge instrument was executed. The statutory clock runs until the form is filed with MCA. Rows show who holds the case right now. Select a dot to open it.</p>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--bank)"></i>With your bank</span>
+          <span><i style="background:var(--borrower)"></i>With borrower</span>
+          <span><i style="background:var(--sdpa)"></i>With SDPA</span>
+          <span><i class="hollow"></i>Filed, day of filing</span>
+        </div>
+      </div>
+      <div class="hz-wrap"><svg id="horizon" viewBox="0 0 1000 300" role="img" aria-label="Open cases by instrument age"></svg></div>
+    </section>
+
+    <section class="kpis" id="kpis"></section>
+    <section class="lanes" id="lanes"></section>
+
+    <div class="grid2">
+      <section class="card">
+        <h2>Where cases are in the process</h2>
+        <p class="lede">Nine steps from your request to the MCA certificate. Colour shows who is holding each step.</p>
+        <div id="pipeline"></div>
+      </section>
+      <section class="card">
+        <h2>SRN ageing at MCA</h2>
+        <p class="lede">Filed forms waiting for the Registrar's approval, by days since the SRN was generated.</p>
+        <div class="srn-bars" id="srnBars"></div>
+        <div class="srn-x"><span>0 to 3 days</span><span>4 to 7</span><span>8 to 14</span><span>15 or more</span></div>
+        <div class="legend" style="margin-top:10px"><span><i style="background:var(--mca)"></i>Under processing</span><span><i style="background:var(--breach)"></i>Resubmission asked by MCA</span></div>
+        <p class="srn-note" id="srnNote"></p>
+      </section>
+    </div>
+
+    <div class="grid2">
+      <section class="card">
+        <h2>Branches</h2>
+        <p class="lede">Open cases per branch and who holds them. Select a number to see those cases.</p>
+        <div class="tbl-wrap"><table class="heat" id="heat"></table></div>
+      </section>
+      <section class="card" id="needs">
+        <h2>Waiting on your bank</h2>
+        <p class="lede">Oldest first. Days left are counted against the 30 day window.</p>
+        <div id="needList"></div>
+      </section>
+    </div>
+
+    <section class="card" id="cases">
+      <div class="tbl-head">
+        <div><h2>All cases</h2><p class="lede" style="margin:4px 0 0" id="countLine"></p></div>
+        <div class="actions"><button class="btn small" id="clearBtn">Clear filters</button><button class="btn small" id="exportBtn">Export to Excel</button></div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="reg">
+          <thead><tr>
+            <th><button data-sort="id">Case</button></th><th><button data-sort="borrower">Borrower</button></th><th>Branch</th><th>Form</th>
+            <th><button data-sort="amount">Charge amount</button></th><th>Step</th><th>Held by</th>
+            <th><button data-sort="instrAge">Instrument age</button></th><th><button data-sort="caseAge">Case age</button></th><th><button data-sort="srnAge">SRN age</button></th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <button class="btn small more" id="moreBtn">Show all</button>
+    </section>
+
+    <section class="card" id="certs">
+      <h2>Certificates issued recently</h2>
+      <p class="lede">Registration certificates and the filed forms, kept in each case folder.</p>
+      <div class="certs" id="certList"></div>
+    </section>
+  </main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drTitle"></aside>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Raise charge filing request">
+  <div class="bg" data-close></div>
+  <div class="box">
+    <div class="tabs"><button data-tab="single" class="on">Single request</button><button data-tab="bulk">Bulk upload</button></div>
+    <div id="tabSingle" class="mbody">
+      <div class="form">
+        <label>Borrower CIN<input id="fCin" placeholder="U27100WB2011PTC160000"></label>
+        <label>Borrower name<input id="fName" placeholder="Company name as per MCA"></label>
+        <label>Form<select id="fForm"><option>CHG-1 creation</option><option>CHG-1 modification</option><option>CHG-4 satisfaction</option></select></label>
+        <label>Branch<select id="fBranch"></select></label>
+        <label>Charge amount (₹ crore)<input id="fAmt" type="number" min="0" step="0.01" placeholder="25.00"></label>
+        <label>Date the instrument was executed<input id="fDate" type="date" value="2026-09-22"></label>
+        <div class="drop full" id="drop1">Drop the sanction letter, deed, board resolution and property schedule here, or <button class="btn small" type="button" id="pick1">choose files</button><div id="files1" style="margin-top:8px"></div></div>
+      </div>
+    </div>
+    <div id="tabBulk" class="mbody" hidden>
+      <div class="drop" id="drop2">Drop an Excel sheet with one row per charge and a ZIP of documents named by row number.<br><br><button class="btn small" type="button" id="sampleBtn">Use a sample file</button></div>
+      <div id="bulkOut"></div>
+    </div>
+    <div class="mfoot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="submitBtn">Raise request</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="tip" id="tip"></div>
+
+<script>
+(function(){
+const TODAY=new Date(2026,8,25);const DAY=864e5;
+let seed=20260925;function rnd(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}
+const ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));const pick=a=>a[Math.floor(rnd()*a.length)];
+function wpick(ws){let s=ws.reduce((a,b)=>a+b,0),r=rnd()*s;for(let i=0;i<ws.length;i++){r-=ws[i];if(r<0)return i}return ws.length-1}
+const fmtD=d=>d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+const ago=n=>new Date(TODAY-n*DAY);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cr=n=>'₹'+(n>=100?n.toFixed(0):n.toFixed(2).replace(/\.?0+$/,''))+' Cr';
+
+const STAGES=[
+ {k:'Request received',d:'Logged, queued for review'},
+ {k:'AI document review',d:'Reading every attachment'},
+ {k:'Query with bank',d:'Documents or details needed'},
+ {k:'Form prepared',d:'CHG form drafted in the portal'},
+ {k:'Case owner review',d:'SDPA case owner checks the form'},
+ {k:'MCA form cross-check',d:'MCA download matched to approved form'},
+ {k:'Signatures and payment',d:'DSCs and pro forma invoice'},
+ {k:'Filed, awaiting MCA',d:'SRN generated'},
+ {k:'Certificate issued',d:'In the case folder'}];
+const LANES=[{k:'Bank',t:'With your bank',c:'var(--bank)'},{k:'Borrower',t:'With borrower',c:'var(--borrower)'},{k:'SDPA',t:'With SDPA',c:'var(--sdpa)'},{k:'MCA',t:'With MCA',c:'var(--mca)'}];
+const LC={Bank:'var(--bank)',Borrower:'var(--borrower)',SDPA:'var(--sdpa)',MCA:'var(--mca)',Done:'var(--ok)'};
+const BRANCHES=['Kolkata Main','Park Street','Salt Lake','Howrah','Durgapur','Siliguri','Bhubaneswar','Patna','Guwahati','Ranchi'];
+const P1=['Hooghly','Ganga','Sundarban','Konark','Vindhya','Narmada','Brahmaputra','Kaveri','Satpura','Himadri','Deccan','Malabar','Coromandel','Aravalli','Teesta','Damodar','Mahanadi','Chilika'];
+const P2=['Agro','Steel','Polymers','Textiles','Logistics','Pharma','Infra','Foods','Castings','Paper','Solar','Ceramics','Jute','Tea'];
+const P3=['Pvt Ltd','Ltd','Private Limited','Industries Ltd'];
+const QPOOL=['Sanction letter date (12 Aug) differs from the deed date (14 Aug). Confirm the date the charge was created.','Property schedule on page 3 has no survey or khata number. Share the corrected schedule.','Board resolution is not signed. Upload a signed, certified copy.','Charge amount in the deed (₹18 Cr) does not match the sanction letter (₹16.5 Cr). Confirm which is correct.','Borrower CIN in the request does not match the name on the deed. Confirm the borrowing company.','Hypothecation deed page 7 is missing from the scan. Upload the full deed.','Joint charge holders are mentioned but not listed. Share each holder\'s name and share of the facility.'];
+const DOCS={'CHG-1 creation':['Sanction letter','Charge instrument (deed or agreement)','Board resolution of the borrower','Property or asset schedule','Borrower CIN and signatory details','Bank authorisation letter'],'CHG-1 modification':['Modification letter or supplemental deed','Original charge ID and SRN','Board resolution of the borrower','Revised asset schedule','Bank authorisation letter'],'CHG-4 satisfaction':['No dues certificate','Original charge ID','Letter of satisfaction from the bank','Bank authorisation letter']};
+
+const cases=[];
+function makeCase(i){
+  const stage=wpick([5,7,22,8,9,7,28,15,32]);
+  const form=wpick([76,14,10]);const fm=['CHG-1 creation','CHG-1 modification','CHG-4 satisfaction'][form];
+  let caseAge,instrAge,srnAge=null,certAge=null;
+  if(stage===8){certAge=ri(0,45);caseAge=certAge+ri(14,34)}
+  else if(stage===7){srnAge=ri(0,20);caseAge=srnAge+ri(9,24)}
+  else caseAge=Math.min(stage*3+ri(0,11),58);
+  instrAge=caseAge+ri(0,7)+(rnd()<.06?ri(20,55):0);
+  let withK,waiting;
+  if(stage===2){withK='Bank';waiting=null}
+  else if(stage===6){const r=rnd();if(r<.45){withK='Borrower';waiting='Director DSC on the form'}else if(r<.8){withK='Bank';waiting='Authorised signatory DSC'}else{withK='Bank';waiting='Pro forma invoice payment'}}
+  else if(stage===7){withK='MCA';waiting=rnd()<.24?'Resubmission asked by MCA':'Under processing'}
+  else if(stage===8){withK='Done';waiting='Certificate in folder'}
+  else{withK='SDPA';waiting=['Queued for AI review','AI reading the attachments',null,'Drafting the CHG form','Case owner reviewing the form','Matching MCA download to approved form'][stage]}
+  const qs=[];if(stage===2){const n=ri(1,3);const pool=QPOOL.slice();for(let j=0;j<n;j++)qs.push({text:pool.splice(ri(0,pool.length-1),1)[0],raised:ri(1,Math.max(1,caseAge-4)),answered:false});waiting='Reply to '+n+(n>1?' queries':' query')}
+  const c={id:'CF-2026-'+String(1180+i).padStart(4,'0'),borrower:pick(P1)+' '+pick(P2)+' '+pick(P3),cin:'U'+ri(10000,99999)+'WB'+ri(2004,2022)+'PTC'+ri(100000,199999),branch:pick(BRANCHES),form:fm,
+   instrument:fm==='CHG-4 satisfaction'?'Satisfaction of charge':pick(['Hypothecation','Equitable mortgage','Hypothecation','Pledge','Registered mortgage']),
+   amount:Math.round(Math.exp(rnd()*5.2-.6)*100)/100,stage,withK,waiting,caseAge,instrAge,srnAge,certAge,queries:qs,
+   srn:stage>=7?'AB'+ri(1000000,9999999):null,proforma:rnd()<.5,chargeId:stage===8?String(ri(100000000,199999999)):null};
+  c.filedAge=srnAge!=null?instrAge-srnAge:(certAge!=null?instrAge-certAge-ri(3,10):null);
+  return c;
+}
+for(let i=0;i<156;i++)cases.push(makeCase(i));
+const isOpen=c=>c.stage<8;const unfiled=c=>c.stage<7;
+
+let F={};let sortK='instrAge',sortDir=-1,showAll=false,interp='';
+function match(c){
+  if(F.with&&c.withK!==F.with)return false;
+  if(F.stage!=null&&c.stage!==F.stage)return false;
+  if(F.branch&&c.branch!==F.branch)return false;
+  if(F.minAge!=null&&c.instrAge<F.minAge)return false;
+  if(F.minSrn!=null&&(c.srnAge==null||c.srnAge<F.minSrn))return false;
+  if(F.dsc&&!(c.waiting||'').includes('DSC'))return false;
+  if(F.late&&!(unfiled(c)&&c.instrAge>30))return false;
+  if(F.due&&!(unfiled(c)&&c.instrAge>=23&&c.instrAge<=30))return false;
+  if(F.band&&!(unfiled(c)&&c.instrAge>=F.band[0]&&c.instrAge<=F.band[1]))return false;
+  if(F.done&&c.stage!==8)return false;
+  if(F.text){const t=F.text.toLowerCase();if(!(c.id.toLowerCase().includes(t)||c.borrower.toLowerCase().includes(t)||(c.srn||'').toLowerCase().includes(t)))return false}
+  return true;
+}
+const filtered=()=>cases.filter(match);
+const hasF=()=>Object.keys(F).some(k=>F[k]!=null&&F[k]!==false&&F[k]!=='');
+const med=a=>{if(!a.length)return 0;const s=a.slice().sort((x,y)=>x-y);return s[Math.floor(s.length/2)]};
+
+function renderChips(){
+  const el=document.getElementById('chips');const ch=[];
+  const add=(k,label)=>ch.push(`<span class="chip">${esc(label)}<button aria-label="Remove ${esc(label)}" data-rm="${k}">×</button></span>`);
+  if(F.with)add('with',LANES.find(l=>l.k===F.with)?.t||F.with);
+  if(F.stage!=null)add('stage','Step: '+STAGES[F.stage].k);
+  if(F.branch)add('branch','Branch: '+F.branch);
+  if(F.minAge!=null)add('minAge','Instrument age over '+F.minAge+' days');
+  if(F.minSrn!=null)add('minSrn','SRN age over '+F.minSrn+' days');
+  if(F.dsc)add('dsc','Waiting on a DSC');
+  if(F.late)add('late','Past the 30 day window');
+  if(F.due)add('due','Due within 7 days');
+  if(F.band)add('band','Instrument age '+F.band[0]+' to '+F.band[1]+' days');
+  if(F.done)add('done','Certificate issued');
+  if(F.text)add('text','Search: '+F.text);
+  el.innerHTML=(interp&&ch.length?`<span class="interp">${esc(interp)}</span>`:'')+ch.join('');
+}
+
+function renderHorizon(){
+  const svg=document.getElementById('horizon');const W=1000,L=112,R=982,MAX=125;
+  const X=d=>L+Math.min(d,MAX)/MAX*(R-L);
+  const lanes=['Bank','Borrower','SDPA','MCA'];const top=34,lh=62;
+  let s='';
+  const zones=[[0,30,'none','Normal fee'],[30,60,'var(--z2)','Additional fee'],[60,120,'var(--z3)','Ad valorem fee'],[120,MAX,'var(--z4)','Condonation']];
+  zones.forEach(z=>{s+=`<rect x="${X(z[0])}" y="${top-6}" width="${X(z[1])-X(z[0])}" height="${lh*4+6}" fill="${z[2]}"/>`;s+=`<text class="zone-label" x="${X(z[0])+6}" y="${top-12}">${z[3]}</text>`});
+  [30,60,120].forEach(d=>s+=`<line x1="${X(d)}" x2="${X(d)}" y1="${top-6}" y2="${top+lh*4}" stroke="var(--muted)" stroke-dasharray="3 4" stroke-width="1"/>`);
+  lanes.forEach((ln,i)=>{const y=top+i*lh;s+=`<line x1="${L}" x2="${R}" y1="${y+lh}" y2="${y+lh}" stroke="var(--line)"/>`;s+=`<text class="lane-label" x="8" y="${y+lh/2+4}" fill="${LC[ln]}">${['Your bank','Borrower','SDPA','Filed at MCA'][i]}</text>`});
+  for(let d=0;d<=120;d+=10)s+=`<text class="tick" x="${X(d)}" y="${top+lh*4+16}" text-anchor="middle">${d}</text>`;
+  s+=`<text class="tick" x="${R}" y="${top+lh*4+32}" text-anchor="end">Days since instrument was executed</text>`;
+  const rng=(()=>{let k=7;return()=>{k=(k*16807)%2147483647;return k/2147483647}})();
+  cases.filter(isOpen).forEach(c=>{
+    const lane=lanes.indexOf(c.withK);if(lane<0)return;
+    const filed=c.stage===7;const d=filed?c.filedAge:c.instrAge;
+    const cx=X(d)+(rng()-.5)*4,cy=top+lane*lh+10+rng()*(lh-20);
+    const dim=hasF()&&!match(c);const col=LC[c.withK];
+    s+=`<circle class="bead${dim?' dim':''}" data-id="${c.id}" tabindex="${dim?-1:0}" role="button" aria-label="${c.id}, ${esc(c.borrower)}, day ${d}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5.5" fill="${filed?'var(--surface)':col}" stroke="${filed?col:'var(--surface)'}" stroke-width="${filed?2:1}"/>`;
+  });
+  svg.innerHTML=s;
+}
+
+function renderKPIs(){
+  const open=cases.filter(isOpen),uf=cases.filter(unfiled);
+  const due=uf.filter(c=>c.instrAge>=23&&c.instrAge<=30).length,addl=uf.filter(c=>c.instrAge>30&&c.instrAge<=60).length,beyond=uf.filter(c=>c.instrAge>60).length;
+  const done=cases.filter(c=>c.stage===8);const month=done.filter(c=>c.certAge<=24).length;
+  const tat=med(done.map(c=>c.caseAge-c.certAge));
+  document.getElementById('kpis').innerHTML=
+   `<button class="kpi" data-k="open"><b>${open.length}</b><span>Open cases</span></button>`+
+   `<button class="kpi warn" data-k="due"><b>${due}</b><span>Due to file within 7 days</span></button>`+
+   `<button class="kpi warn" data-k="addl"><b>${addl}</b><span>In the additional fee window</span></button>`+
+   `<button class="kpi bad" data-k="beyond"><b>${beyond}</b><span>Beyond 60 days</span></button>`+
+   `<button class="kpi" data-k="done"><b>${month}</b><span>Certificates this month</span></button>`+
+   `<div class="kpi"><b>${tat} days</b><span>Typical request to certificate</span></div>`;
+}
+
+function renderLanes(){
+  const open=cases.filter(isOpen);
+  document.getElementById('lanes').innerHTML=LANES.map(l=>{
+    const g=open.filter(c=>c.withK===l.k);const byW={};g.forEach(c=>{const w=c.stage===2?'queries':(c.waiting||'');byW[w]=(byW[w]||0)+1});
+    const parts=Object.entries(byW).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>v+' '+k.charAt(0).toLowerCase()+k.slice(1)).join(', ');
+    return `<button class="lane${F.with===l.k?' on':''}" style="--c:${l.c}" data-lane="${l.k}" aria-pressed="${F.with===l.k}"><span class="n">${g.length}</span><span class="t">${l.t}</span><span class="d">${esc(parts||'Nothing waiting')}. Median ${med(g.map(c=>l.k==='MCA'?c.srnAge:c.instrAge))} days${l.k==='MCA'?' since SRN':''}</span></button>`}).join('');
+}
+
+function renderPipeline(){
+  const list=filtered();const max=Math.max(...STAGES.map((_,i)=>cases.filter(c=>c.stage===i).length));
+  document.getElementById('pipeline').innerHTML=STAGES.map((s,i)=>{
+    const g=list.filter(c=>c.stage===i);const segs=['Bank','Borrower','SDPA','MCA','Done'].map(k=>{const n=g.filter(c=>c.withK===k).length;return n?`<i style="width:${n/max*100}%;background:${LC[k]}"></i>`:''}).join('');
+    return `<button class="stage${F.stage===i?' on':''}" data-stage="${i}" aria-pressed="${F.stage===i}"><span class="no">${i+1}</span><span class="nm">${s.k}<small>${s.d}</small></span><span class="bar">${segs}</span><span class="ct">${g.length}</span></button>`}).join('');
+}
+
+function renderSRN(){
+  const g=cases.filter(c=>c.stage===7&&(!F.branch||c.branch===F.branch));const B=[[0,3],[4,7],[8,14],[15,999]];
+  const counts=B.map(b=>{const x=g.filter(c=>c.srnAge>=b[0]&&c.srnAge<=b[1]);return{p:x.filter(c=>c.waiting==='Under processing').length,r:x.filter(c=>c.waiting!=='Under processing').length,min:b[0]}});
+  const mx=Math.max(1,...counts.map(c=>c.p+c.r));
+  document.getElementById('srnBars').innerHTML=counts.map(c=>`<button class="srn-col" data-srn="${c.min}" aria-label="${c.p+c.r} SRNs aged ${c.min} days or more in this band"><span class="v">${c.p+c.r}</span><i style="height:${c.r/mx*110}px;background:var(--breach)"></i><i style="height:${c.p/mx*110}px;background:var(--mca);border-radius:${c.r?0:'3px 3px 0 0'}"></i></button>`).join('');
+  const rs=g.filter(c=>c.waiting!=='Under processing').length;
+  document.getElementById('srnNote').textContent=`${g.length} forms filed and waiting. Median ${med(g.map(c=>c.srnAge))} days since SRN. ${rs} need resubmission, which SDPA handles; you will be asked only if MCA needs something from the bank.`;
+}
+
+function renderHeat(){
+  const open=cases.filter(isOpen);const ks=['Bank','Borrower','SDPA','MCA'];
+  const mx=Math.max(1,...BRANCHES.flatMap(b=>ks.map(k=>open.filter(c=>c.branch===b&&c.withK===k).length)));
+  document.getElementById('heat').innerHTML=`<thead><tr><th>Branch</th>${['Your bank','Borrower','SDPA','MCA'].map(t=>`<th style="text-align:center">${t}</th>`).join('')}</tr></thead><tbody>`+
+   BRANCHES.map(b=>`<tr><td class="br">${b}</td>`+ks.map(k=>{const n=open.filter(c=>c.branch===b&&c.withK===k).length;const a=n?Math.round(12+n/mx*58):0;
+    return `<td class="cell${n?'':' zero'}" ${n?`data-hb="${b}" data-hk="${k}" tabindex="0" role="button" aria-label="${n} cases in ${b} with ${k}"`:''} style="${n?`background:color-mix(in srgb,${LC[k]} ${a}%,transparent);color:${a>45?'#fff':'var(--ink)'}`:''}">${n||'·'}</td>`}).join('')+'</tr>').join('')+'</tbody>';
+}
+
+function daysBadge(c){if(!unfiled(c))return '';const left=30-c.instrAge;if(left<0)return `<span class="days bad">${-left} days late</span>`;return `<span class="days ${left<=7?'warn':'ok'}">${left} days left</span>`}
+function renderNeeds(){
+  const g=cases.filter(c=>isOpen(c)&&c.withK==='Bank').sort((a,b)=>b.instrAge-a.instrAge);
+  document.getElementById('navBadge').textContent=g.length;
+  document.getElementById('needList').innerHTML=g.slice(0,6).map(c=>`<div class="need"><div><div class="who2"><a href="#" data-open="${c.id}" style="color:inherit">${esc(c.borrower)}</a></div><div class="what">${c.id}, ${c.branch}. ${esc(c.waiting)}</div></div>${daysBadge(c)}</div>`).join('')+
+   (g.length>6?`<button class="btn small more" data-lane="Bank">See all ${g.length}</button>`:'');
+}
+
+function ageCell(n,cap,col){if(n==null)return '<span class="muted">Not yet</span>';const w=Math.min(n/cap,1)*100;return `<span class="age"><span class="track"><i style="width:${w}%;background:${col}"></i></span>${n} d</span>`}
+function renderTable(){
+  let list=filtered().sort((a,b)=>{const x=a[sortK],y=b[sortK];if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*sortDir});
+  document.getElementById('countLine').textContent=`${list.length} of ${cases.length} cases${hasF()?' match your filters':''}`;
+  const rows=showAll?list:list.slice(0,25);
+  document.getElementById('tbody').innerHTML=rows.map(c=>{const iCol=!unfiled(c)?'var(--muted)':c.instrAge>60?'var(--breach)':c.instrAge>30?'var(--borrower)':'var(--ok)';
+    return `<tr data-open="${c.id}" tabindex="0"><td><b>${c.id}</b></td><td>${esc(c.borrower)}</td><td>${c.branch}</td><td>${c.form}</td><td>${cr(c.amount)}</td><td>${STAGES[c.stage].k}</td>
+    <td><span class="pill" style="--c:${LC[c.withK]}">${c.withK==='Done'?'Complete':c.withK}</span></td><td>${unfiled(c)?ageCell(c.instrAge,60,iCol):'<span class="muted">Filed day '+c.filedAge+'</span>'}</td><td>${c.caseAge} d</td><td>${c.stage===7?ageCell(c.srnAge,20,'var(--mca)'):'<span class="muted">'+(c.stage===8?'Approved':'Not yet')+'</span>'}</td></tr>`}).join('')||`<tr><td colspan="10" class="muted" style="padding:24px 10px">No cases match. Clear a filter to widen the list.</td></tr>`;
+  document.getElementById('moreBtn').hidden=showAll||list.length<=25;
+  document.getElementById('moreBtn').textContent=`Show all ${list.length}`;
+}
+function renderCerts(){
+  document.getElementById('certList').innerHTML=cases.filter(c=>c.stage===8).sort((a,b)=>a.certAge-b.certAge).slice(0,6).map(c=>`<div class="cert"><b>${esc(c.borrower)}</b><span>${c.form}, charge ID ${c.chargeId}</span><span>Issued ${fmtD(ago(c.certAge))}, SRN ${c.srn}</span><button class="btn small" data-open="${c.id}">Open case folder</button></div>`).join('');
+}
+function renderAll(){renderChips();renderHorizon();renderKPIs();renderLanes();renderPipeline();renderSRN();renderHeat();renderNeeds();renderTable();renderCerts()}
+
+/* drawer */
+const drawer=document.getElementById('drawer'),scrim=document.getElementById('scrim');let lastFocus=null;
+function openCase(id){
+  const c=cases.find(x=>x.id===id);if(!c)return;lastFocus=document.activeElement;
+  const col=LC[c.withK];const stepDates=[];let back=c.caseAge;
+  for(let i=0;i<=c.stage;i++){stepDates.push(ago(Math.max(0,Math.round(back-(c.caseAge/(c.stage+1))*i))))}
+  let clock;
+  if(unfiled(c)){const left=30-c.instrAge;const pos=Math.min(c.instrAge/120,1)*100;
+    clock=`<div class="clock"><div class="muted" style="font-size:12.5px">Statutory clock, from ${fmtD(ago(c.instrAge))}</div><div class="big" style="color:${left<0?'var(--breach)':left<=7?'var(--borrower)':'var(--ink)'}">${left>=0?left+' days left in the normal fee window':(-left)+' days past the 30 day window'}</div><div class="ctrack"><b style="left:calc(${pos}% - 2px)"></b></div><div class="muted" style="font-size:12px;margin-top:6px">Day ${c.instrAge}. Normal fee to day 30, additional fee to 60, ad valorem fee to 120.</div></div>`}
+  else clock=`<div class="clock"><div class="muted" style="font-size:12.5px">Filed with MCA</div><div class="big">Filed on day ${c.filedAge}${c.filedAge<=30?', inside the normal fee window':''}</div><div class="muted" style="font-size:12.5px;margin-top:4px">SRN ${c.srn}${c.stage===7?', '+c.srnAge+' days with MCA, '+c.waiting.toLowerCase():', approved'}</div></div>`;
+  const docs=DOCS[c.form].map((d,i)=>{const pend=c.stage===2&&i<c.queries.length;const st=c.stage<=1&&i>2?'<span class="st-na">Reading</span>':pend?'<span class="st-pend">Query raised</span>':'<span class="st-ok">Verified</span>';return `<li><span>${d}</span>${st}</li>`}).join('');
+  const sigs=c.stage>=6?[['Borrower director DSC',c.stage>6||c.waiting!=='Director DSC on the form'],['Bank authorised signatory DSC',c.stage>6||(c.waiting!=='Authorised signatory DSC'&&c.waiting!=='Director DSC on the form')],['Professional certification by SDPA',c.stage>6],['Pro forma invoice',c.proforma?(c.stage>6||c.waiting!=='Pro forma invoice payment'):null]].map(([n,ok])=>`<li><span>${n}</span>${ok===null?'<span class="st-na">Not needed for this bank</span>':ok?'<span class="st-ok">Received</span>':'<span class="st-pend">Pending</span>'}</li>`).join(''):'';
+  const qs=c.queries.map((q,i)=>`<div class="q${q.answered?' answered':''}" data-q="${i}"><div>${esc(q.text)}</div><small>Raised by SDPA AI review, ${q.raised} days ago${q.answered?'. Answered':''}</small>${q.answered?'':`<textarea aria-label="Your reply" placeholder="Type your reply or attach the document"></textarea><div class="actions"><button class="btn small primary" data-reply="${i}">Send reply</button><button class="btn small" data-attach="${i}">Attach document</button></div>`}</div>`).join('');
+  drawer.innerHTML=`<div class="dr-head"><div><div class="muted" style="font-size:12.5px">${c.id}, ${c.branch}</div><h3 id="drTitle">${esc(c.borrower)}</h3><div style="margin-top:6px"><span class="pill" style="--c:${col}">${c.withK==='Done'?'Complete':'Held by '+c.withK}</span> <span class="muted" style="font-size:13px">${esc(c.waiting||'')}</span></div></div><button class="btn icon" id="drClose" aria-label="Close case">✕</button></div>
+  <div class="dr-body">${clock}
+   <div class="facts"><div><span>Form</span>${c.form}</div><div><span>Instrument</span>${c.instrument}</div><div><span>Charge amount</span>${cr(c.amount)}</div><div><span>Borrower CIN</span>${c.cin}</div><div><span>Request raised</span>${fmtD(ago(c.caseAge))}</div><div><span>Charge ID</span>${c.chargeId||'Issued on approval'}</div></div>
+   ${qs?`<div><h4>Queries for your bank</h4><div style="display:flex;flex-direction:column;gap:10px">${qs}</div></div>`:''}
+   <div><h4>Progress</h4><ol class="tl">${STAGES.map((s,i)=>`<li class="${i<c.stage||c.stage===8?'done':i===c.stage?'now':'todo'}" style="--c:${col}"><span class="dot"></span><span>${s.k}</span><time>${i<=c.stage?fmtD(stepDates[i]):''}</time></li>`).join('')}</ol></div>
+   <div><h4>Documents</h4><ul class="checks">${docs}</ul></div>
+   ${sigs?`<div><h4>Signatures and payment</h4><ul class="checks">${sigs}</ul></div>`:''}
+   <div><h4>Case folder</h4><ul class="checks"><li><span>Approved CHG form (portal copy)</span>${c.stage>=5?'<button class="btn small" data-dl>Download</button>':'<span class="st-na">After review</span>'}</li><li><span>Filed MCA form with SRN challan</span>${c.stage>=7?'<button class="btn small" data-dl>Download</button>':'<span class="st-na">After filing</span>'}</li><li><span>Certificate of registration of charge</span>${c.stage===8?'<button class="btn small" data-dl>Download</button>':'<span class="st-na">On MCA approval</span>'}</li></ul></div>
+  </div>`;
+  drawer.classList.add('on');scrim.classList.add('on');drawer.setAttribute('aria-hidden','false');document.getElementById('drClose').focus();
+  drawer.dataset.id=c.id;
+}
+function closeDrawer(){drawer.classList.remove('on');scrim.classList.remove('on');drawer.setAttribute('aria-hidden','true');if(lastFocus)lastFocus.focus()}
+scrim.onclick=closeDrawer;
+drawer.addEventListener('click',e=>{
+  if(e.target.id==='drClose')return closeDrawer();
+  const c=cases.find(x=>x.id===drawer.dataset.id);
+  if(e.target.dataset.reply!=null||e.target.dataset.attach!=null){const i=+(e.target.dataset.reply??e.target.dataset.attach);c.queries[i].answered=true;
+    if(c.queries.every(q=>q.answered)){c.stage=3;c.withK='SDPA';c.waiting='Drafting the CHG form';toast('All queries answered. SDPA is preparing the form now.')}else{const left=c.queries.filter(q=>!q.answered).length;c.waiting='Reply to '+left+(left>1?' queries':' query');toast('Reply sent. The AI will check it within minutes.')}
+    renderAll();openCase(c.id)}
+  if(e.target.hasAttribute('data-dl'))toast('Download starts in the live portal. This preview has sample data only.');
+});
+
+/* tooltip */
+const tip=document.getElementById('tip');
+document.getElementById('horizon').addEventListener('mousemove',e=>{const b=e.target.closest('.bead');if(!b){tip.classList.remove('on');return}const c=cases.find(x=>x.id===b.dataset.id);
+  tip.innerHTML=`<b>${esc(c.borrower)}</b><br>${c.id}, ${c.branch}<br>${c.stage===7?'Filed on day '+c.filedAge+', SRN '+c.srnAge+' days with MCA':'Day '+c.instrAge+'. '+esc(c.waiting||'')}`;
+  tip.style.left=Math.min(e.clientX+14,innerWidth-270)+'px';tip.style.top=(e.clientY+14)+'px';tip.classList.add('on')});
+document.getElementById('horizon').addEventListener('mouseleave',()=>tip.classList.remove('on'));
+
+/* ask parser */
+function parseAsk(t){
+  const s=t.toLowerCase();const f={};const said=[];
+  if(/borrower/.test(s)){f.with='Borrower';said.push('held by the borrower')}
+  else if(/\b(with us|our end|my bank|our bank|with bank|with the bank|pending with me)\b/.test(s)){f.with='Bank';said.push('held by your bank')}
+  else if(/sdpa|your end/.test(s)){f.with='SDPA';said.push('held by SDPA')}
+  if(/srn|mca|registrar/.test(s)){f.stage=7;said.push('filed and waiting at MCA')}
+  if(/quer/.test(s)){f.stage=2;said.push('with open queries')}
+  if(/dsc|signature|sign/.test(s)){f.dsc=true;said.push('waiting on a DSC')}
+  if(/certificate|completed|done|issued/.test(s)){f.done=true;said.push('with certificates issued')}
+  if(/late|overdue|breach|past 30|missed/.test(s)){f.late=true;said.push('past the 30 day window')}
+  if(/due (soon|this week)|about to|expir/.test(s)){f.due=true;said.push('due within 7 days')}
+  const m=s.match(/(?:over|more than|older than|above|>)\s*(\d+)/);
+  if(m){if(f.stage===7){f.minSrn=+m[1];said.push('SRN over '+m[1]+' days')}else{f.minAge=+m[1];said.push('instrument over '+m[1]+' days')}}
+  const br=BRANCHES.find(b=>s.includes(b.toLowerCase())||s.includes(b.split(' ')[0].toLowerCase()));if(br){f.branch=br;said.push('in '+br)}
+  const id=s.match(/cf-2026-\d{4}|ab\d{7}/);if(id){f.text=id[0].toUpperCase();said.push('matching '+f.text)}
+  if(!said.length&&s.trim()){f.text=t.trim();said.push('matching "'+t.trim()+'"')}
+  return{f,text:'Showing cases '+said.join(', ')+'.'};
+}
+document.getElementById('askForm').onsubmit=e=>{e.preventDefault();const v=document.getElementById('askInput').value;if(!v.trim())return;const r=parseAsk(v);F=r.f;interp=r.text;showAll=false;renderAll();document.getElementById('cases').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'})};
+document.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>{document.getElementById('askInput').value=b.dataset.ask;document.getElementById('askForm').requestSubmit()});
+
+/* global clicks */
+document.addEventListener('click',e=>{
+  const t=e.target;
+  const op=t.closest('[data-open]');if(op&&!drawer.contains(op)){e.preventDefault();return openCase(op.dataset.open)}
+  const bead=t.closest('.bead');if(bead&&!bead.classList.contains('dim'))return openCase(bead.dataset.id);
+  const lane=t.closest('[data-lane]');if(lane){F.with=F.with===lane.dataset.lane?null:lane.dataset.lane;interp='';return renderAll()}
+  const st=t.closest('[data-stage]');if(st){const i=+st.dataset.stage;F.stage=F.stage===i?null:i;interp='';return renderAll()}
+  const hc=t.closest('[data-hb]');if(hc){F={branch:hc.dataset.hb,with:hc.dataset.hk};interp='';renderAll();return document.getElementById('cases').scrollIntoView()}
+  const sc=t.closest('[data-srn]');if(sc){F={stage:7,minSrn:+sc.dataset.srn||null};interp='';return renderAll()}
+  const k=t.closest('[data-k]');if(k){const m={open:{},due:{due:true},addl:{band:[31,60]},beyond:{band:[61,999]},done:{done:true}};F=m[k.dataset.k];interp='';renderAll();return document.getElementById('cases').scrollIntoView()}
+  const rm=t.closest('[data-rm]');if(rm){F[rm.dataset.rm]=null;if(!hasF())interp='';return renderAll()}
+  const so=t.closest('[data-sort]');if(so){const kk=so.dataset.sort;sortDir=sortK===kk?-sortDir:-1;sortK=kk;return renderTable()}
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){if(document.getElementById('modal').classList.contains('on'))closeModal();else if(drawer.classList.contains('on'))closeDrawer()}
+  if(e.key==='Enter'&&(e.target.matches('.bead,tr[data-open],td[data-hb]'))){e.preventDefault();e.target.click()}
+});
+document.getElementById('clearBtn').onclick=()=>{F={};interp='';document.getElementById('askInput').value='';renderAll()};
+document.getElementById('moreBtn').onclick=()=>{showAll=true;renderTable()};
+document.getElementById('exportBtn').onclick=()=>toast(`${filtered().length} cases will export to Excel in the live portal.`);
+document.getElementById('themeBtn').onclick=()=>{const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=dark?'light':'dark'};
+
+/* modal */
+const modal=document.getElementById('modal');let tab='single',bulkRows=null;
+document.getElementById('fBranch').innerHTML=BRANCHES.map(b=>`<option>${b}</option>`).join('');
+function openModal(t){setTab(t);modal.classList.add('on');setTimeout(()=>modal.querySelector(t==='single'?'#fCin':'#sampleBtn').focus(),30)}
+function closeModal(){modal.classList.remove('on');bulkRows=null;document.getElementById('bulkOut').innerHTML='';document.getElementById('files1').innerHTML=''}
+function setTab(t){tab=t;modal.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));document.getElementById('tabSingle').hidden=t!=='single';document.getElementById('tabBulk').hidden=t!=='bulk';document.getElementById('submitBtn').textContent=t==='single'?'Raise request':(bulkRows?`Raise ${bulkRows.filter(r=>!r.flag).length} requests`:'Raise requests');document.getElementById('submitBtn').disabled=t==='bulk'&&!bulkRows}
+modal.addEventListener('click',e=>{if(e.target.hasAttribute('data-close'))closeModal();if(e.target.dataset.tab)setTab(e.target.dataset.tab)});
+document.getElementById('raiseBtn').onclick=()=>openModal('single');
+document.getElementById('bulkBtn').onclick=()=>openModal('bulk');
+document.getElementById('pick1').onclick=()=>{document.getElementById('files1').innerHTML=['Sanction_letter.pdf','Hypothecation_deed.pdf','Board_resolution.pdf','Asset_schedule.xlsx'].map(f=>`<span class="chip" style="margin:3px;padding-right:12px">${f}</span>`).join('')};
+['drop1','drop2'].forEach(id=>{const d=document.getElementById(id);d.addEventListener('dragover',e=>{e.preventDefault();d.classList.add('hot')});d.addEventListener('dragleave',()=>d.classList.remove('hot'));d.addEventListener('drop',e=>{e.preventDefault();d.classList.remove('hot');id==='drop1'?document.getElementById('pick1').click():runBulk()})});
+document.getElementById('sampleBtn').onclick=runBulk;
+function runBulk(){
+  const out=document.getElementById('bulkOut');out.innerHTML=`<p style="margin:14px 0 4px;font-size:14px" id="bulkMsg">Reading 12 rows and 41 documents</p><div class="progress"><i id="bulkBar"></i></div>`;
+  const msgs=['Reading 12 rows and 41 documents','Matching each borrower CIN with MCA','Checking deeds against sanction letters','Checking each instrument date against the 30 day window'];let p=0;
+  const iv=setInterval(()=>{p+=25;document.getElementById('bulkBar').style.width=p+'%';if(p<100)document.getElementById('bulkMsg').textContent=msgs[p/25];else{clearInterval(iv);
+    bulkRows=Array.from({length:12},(_,i)=>({name:pick(P1)+' '+pick(P2)+' '+pick(P3),amt:Math.round(Math.exp(rnd()*4)*100)/100,days:ri(1,26),flag:[3,8].includes(i)?(i===3?'Board resolution missing':'CIN does not match the deed'):null}));
+    out.innerHTML=`<p style="margin:14px 0 0;font-size:14px"><b>10 ready to raise.</b> 2 need a fix first; they will be raised as queries you can answer later.</p><div class="tbl-wrap"><table class="mini"><thead><tr><th>Row</th><th>Borrower</th><th>Amount</th><th>Instrument age</th><th>AI check</th></tr></thead><tbody>${bulkRows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${cr(r.amt)}</td><td>${r.days} days</td><td>${r.flag?`<span class="st-pend">${r.flag}</span>`:'<span class="st-ok">Complete</span>'}</td></tr>`).join('')}</tbody></table></div>`;setTab('bulk')}},650)}
+document.getElementById('submitBtn').onclick=()=>{
+  if(tab==='single'){const name=document.getElementById('fName').value.trim();if(!name){document.getElementById('fName').focus();return toast('Enter the borrower name to raise the request.')}
+    const d=new Date(document.getElementById('fDate').value);const age=Math.max(0,Math.round((TODAY-d)/DAY));
+    const c={id:'CF-2026-'+String(1180+cases.length).padStart(4,'0'),borrower:name,cin:document.getElementById('fCin').value||'Pending',branch:document.getElementById('fBranch').value,form:document.getElementById('fForm').value,instrument:'As per deed',amount:+document.getElementById('fAmt').value||0,stage:0,withK:'SDPA',waiting:'Queued for AI review',caseAge:0,instrAge:age,srnAge:null,certAge:null,queries:[],srn:null,proforma:false,chargeId:null,filedAge:null};
+    cases.unshift(c);closeModal();F={};interp='';renderAll();toast(`Request ${c.id} raised. AI review starts now; ${30-age} days left to file.`)}
+  else if(bulkRows){const n=bulkRows.length;bulkRows.forEach((r,i)=>cases.unshift({id:'CF-2026-'+String(1180+cases.length).padStart(4,'0'),borrower:r.name,cin:'Pending',branch:pick(BRANCHES),form:'CHG-1 creation',instrument:'Hypothecation',amount:r.amt,stage:r.flag?2:0,withK:r.flag?'Bank':'SDPA',waiting:r.flag?'Reply to 1 query':'Queued for AI review',caseAge:0,instrAge:r.days,srnAge:null,certAge:null,queries:r.flag?[{text:r.flag+'. Upload the corrected document.',raised:0,answered:false}]:[],srn:null,proforma:false,chargeId:null,filedAge:null}));closeModal();F={};interp='';renderAll();toast(`${n} requests raised. 2 are waiting on your reply.`)}
+};
+
+let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),3200)}
+renderAll();
+})();
+</script>
+</body>
+</html>
