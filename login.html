@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDPA Charge Desk: Sign in</title>
+<style>
+  :root { --bg:#f3f4f7; --card:#fff; --ink:#111827; --muted:#6b7280; --navy:#111c33; --line:#d9dce3; --err:#b42318; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0e1424; --card:#18203a; --ink:#e8ebf2; --muted:#9aa3b5; --navy:#e8ebf2; --line:#2c3656; --err:#ff8a80; } }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; padding:16px; }
+  .card { width:100%; max-width:380px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:32px 28px; }
+  h1 { margin:0 0 4px; font-size:22px; }
+  p.sub { margin:0 0 24px; color:var(--muted); font-size:14px; }
+  label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
+  input { width:100%; padding:11px 12px; font-size:15px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--ink); }
+  button { width:100%; margin-top:22px; padding:12px; font-size:15px; font-weight:600; border:0; border-radius:8px; background:var(--navy); color:var(--card); cursor:pointer; }
+  .err { color:var(--err); font-size:13px; min-height:18px; margin-top:12px; }
+  .hint { margin-top:18px; font-size:12px; color:var(--muted); text-align:center; }
+</style>
+</head>
+<body>
+  <form class="card" id="f" autocomplete="off">
+    <h1>SDPA Charge Desk</h1>
+    <p class="sub">Charge registration for banks. Demo environment.</p>
+    <label for="u">User ID</label>
+    <input id="u" required>
+    <label for="p">Password</label>
+    <input id="p" type="password" required>
+    <button type="submit">Sign in</button>
+    <div class="err" id="e"></div>
+    <div class="hint">Demo access only. Contact SDPA for credentials.</div>
+  </form>
+<script>
+  // Demo gate: SHA-256 hashes of the passwords (plain passwords are not stored in this file)
+  var USERS = {
+    "demo":   "748fd187e9d30246c28fa1f4ac0774a390befa3a3b99659efa1a5d51cd284c4e",
+    "banker": "d09eb3ae9617a728111e8363bd7e51c7d8b1c4f6ea26d92e534bd8bebd71033f"
+  };
+  async function sha256(s) {
+    var b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(b)).map(function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+  }
+  document.getElementById('f').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    var u = document.getElementById('u').value.trim().toLowerCase();
+    var p = document.getElementById('p').value;
+    if (USERS[u] && USERS[u] === await sha256(p)) {
+      try { sessionStorage.setItem('sdpa_demo_auth', u); } catch (x) {}
+      location.href = 'index.html';
+    } else {
+      document.getElementById('e').textContent = 'Incorrect user ID or password.';
+    }
+  });
+</script>
+</body>
+</html>
